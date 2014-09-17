@@ -27,23 +27,19 @@
  */
 package jgibblda;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.zip.GZIPInputStream;
-
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.hash.TIntHashSet;
+import org.apache.log4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class LDADataset {
     //---------------------------------------------------------------
     // Instance Variables
     //---------------------------------------------------------------
-
+    protected  static Logger logger = Logger.getLogger(LDADataset.class);
     public Dictionary localDict = new Dictionary();			// local dictionary	
     public ArrayList<Document> docs = new ArrayList<Document>(); 		// a list of documents	
     public int M = 0; 			 		// number of documents
@@ -154,26 +150,15 @@ public class LDADataset {
      * read a dataset from a file
      * @return true if success and false otherwise
      */
-    public boolean readDataSet(String filename, boolean unlabeled) throws FileNotFoundException, IOException
+    public boolean readDataSet(List<String> oridocs,boolean ifunlabeled)
     {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-                    new GZIPInputStream(
-                        new FileInputStream(filename)), "UTF-8"));
-        try {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                addDoc(line, unlabeled);
-            }
-            setM(docs.size());
-
-            // debug output
-            System.out.println("Dataset loaded:");
-            System.out.println("\tM:" + M);
-            System.out.println("\tV:" + V);
-
-            return true;
-        } finally {
-            reader.close();
+        setM(oridocs.size()); //set M, how many docs //todo:Input  docs
+        for(String line:oridocs){
+          addDoc(line, ifunlabeled);
         }
+        logger.info("Dataset loaded:");
+        logger.info("\tM:" + M);
+        logger.info("\tV:" + V);
+         return true;
     }
 }

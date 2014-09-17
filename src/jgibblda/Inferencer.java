@@ -28,43 +28,44 @@
 
 package jgibblda;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import org.apache.log4j.Logger;
+
+import java.util.List;
 
 public class Inferencer
 {
+    private  static Logger logger = Logger.getLogger(Inferencer.class);
     // Train model
     public Model trnModel;
     public Dictionary globalDict;
     private LDACmdOption option;
-
+    public List<String> docs;
     private Model newModel;
 
     //-----------------------------------------------------
     // Init method
     //-----------------------------------------------------
-    public Inferencer(LDACmdOption option) throws FileNotFoundException, IOException
+    public Inferencer(LDACmdOption option, List<String> docs)
     {
         this.option = option;
-
-        trnModel = new Model(option);
+         this.docs=docs;
+        trnModel = new Model(this.option);
         trnModel.init(false);
 
         globalDict = trnModel.data.localDict;
     }
 
     //inference new model ~ getting data from a specified dataset
-    public Model inference() throws FileNotFoundException, IOException
+    public Model inference()           //todo:Input  docs
     {
-        newModel = new Model(option, trnModel);
+        newModel = new Model(option, trnModel,docs);
         newModel.init(true);
         newModel.initInf();
 
-        System.out.println("Sampling " + newModel.niters + " iterations for inference!");		
-        System.out.print("Iteration");
+        logger.info("Sampling " + newModel.niters + " iterations for inference!");
+        logger.info("Iteration");
         for (newModel.liter = 1; newModel.liter <= newModel.niters; newModel.liter++){
-            System.out.format("%6d", newModel.liter);
-
+            logger.debug(newModel.liter);
             // for all newz_i
             for (int m = 0; m < newModel.M; ++m){
                 for (int n = 0; n < newModel.data.docs.get(m).length; n++){
@@ -78,12 +79,11 @@ public class Inferencer
                     (newModel.liter > newModel.nburnin && newModel.liter % newModel.samplingLag == 0)) {
                 newModel.updateParams(trnModel);
             }
-
-            System.out.print("\b\b\b\b\b\b");
+//            logger.debug("\b\b\b\b\b\b");
         }// end iterations
         newModel.liter--;
 
-        System.out.println("\nSaving the inference outputs!");
+        logger.info("\nSaving the inference outputs!");
         String outputPrefix = newModel.dfile;
         if (outputPrefix.endsWith(".gz")) {
             outputPrefix = outputPrefix.substring(0, outputPrefix.length() - 3);

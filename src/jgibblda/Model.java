@@ -27,30 +27,25 @@
  */
 package jgibblda;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import jgibblda.Util.ThetaMatrix;
+import org.apache.log4j.Logger;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.StringTokenizer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TIntObjectHashMap;
 
 public class Model {	
 
     //---------------------------------------------------------------
     //	Class Variables
     //---------------------------------------------------------------
-
+    private static Logger logger = Logger.getLogger(Model.class);
     public static String tassignSuffix = ".tassign.gz";	 // suffix for topic assignment file
     public static String thetaSuffix   = ".theta.gz";    // suffix for theta (topic - document distribution) file
     public static String phiSuffix     = ".phi.gz";      // suffix for phi file (topic - word distribution) file
@@ -68,6 +63,8 @@ public class Model {
     public boolean unlabeled = false;
     public String modelName = "model";
     public LDADataset data; // link to a dataset
+
+    public List<String> oridocs;
 
     public int M = 0;          // dataset size (i.e., number of docs)
     public int V = 0;          // vocabulary size
@@ -101,15 +98,47 @@ public class Model {
     //---------------------------------------------------------------
     //	Constructors
     //---------------------------------------------------------------	
-
-    public Model(LDACmdOption option) throws FileNotFoundException, IOException
-    {
-        this(option, null);
-    }
-
-    public Model(LDACmdOption option, Model trnModel) throws FileNotFoundException, IOException
+    public Model(LDACmdOption option)  //for trmodel
     {
         modelName = option.modelName;
+        K = option.K;
+
+        alpha = option.alpha;
+        if (alpha < 0.0)
+            alpha = 50.0 / K;
+
+        if (option.beta >= 0)
+            beta = option.beta;
+
+        niters = option.niters;
+        nburnin = option.nburnin;
+        samplingLag = option.samplingLag;
+
+        dir = option.dir;
+        if (dir.endsWith(File.separator))
+            dir = dir.substring(0, dir.length() - 1);
+
+        dfile = option.dfile;
+        unlabeled = option.unlabeled;
+        twords = option.twords;
+
+        // initialize dataset
+        data = new LDADataset();
+
+        // process trnModel (if given)
+
+
+    }
+    public Model(LDACmdOption option, List<String> docs)
+    {
+
+        this(option, null,docs); //todo:Input  docs
+    }
+
+    public Model(LDACmdOption option, Model trnModel, List<String> docs)   //todo:Input  docs
+    {
+        modelName = option.modelName;
+        this.oridocs=docs;
         K = option.K;
 
         alpha = option.alpha;
@@ -147,7 +176,9 @@ public class Model {
         }
 
         // read in data
-        data.readDataSet(dir + File.separator + dfile, unlabeled);
+        //todo:Input  docs
+
+       data.readDataSet(oridocs,unlabeled);
     }
 
     //---------------------------------------------------------------
@@ -165,17 +196,12 @@ public class Model {
             z = new TIntArrayList[M];
         } else {
             if (!loadModel()) {
-                System.out.println("Fail to load word-topic assignment file of the model!"); 
+                logger.debug("Fail to load word-topic assignment file of the model!"); 
                 return false;
             }
 
             // debug output
-            System.out.println("Model loaded:");
-            System.out.println("\talpha:" + alpha);
-            System.out.println("\tbeta:" + beta);
-            System.out.println("\tK:" + K);
-            System.out.println("\tM:" + M);
-            System.out.println("\tV:" + V);
+            logger.info("Model loaded:\talpha:" + alpha+"\tbeta:" + beta+"\tK:" + K+"\tM:" + M+"\tV:" + V);
         }
 
         p = new double[K];
@@ -404,7 +430,7 @@ public class Model {
             writer.close();
         }
         catch (Exception e) {
-            System.out.println("Error while saving model tassign: " + e.getMessage());
+            logger.debug("Error while saving model tassign: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -431,7 +457,7 @@ public class Model {
             writer.close();
         }
         catch (Exception e){
-            System.out.println("Error while saving topic distribution file for this model: " + e.getMessage());
+            logger.debug("Error while saving topic distribution file for this model: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -459,7 +485,7 @@ public class Model {
             writer.close();
         }
         catch (Exception e) {
-            System.out.println("Error while saving word-topic distribution:" + e.getMessage());
+            logger.debug("Error while saving word-topic distribution:" + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -485,7 +511,7 @@ public class Model {
             writer.close();
         }
         catch(Exception e){
-            System.out.println("Error while saving model others:" + e.getMessage());
+            logger.debug("Error while saving model others:" + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -529,7 +555,7 @@ public class Model {
             writer.close();
         }
         catch(Exception e){
-            System.out.println("Error while saving model twords: " + e.getMessage());
+            logger.debug("Error while saving model twords: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -601,7 +627,7 @@ public class Model {
             reader.close();
         }
         catch (Exception e){
-            System.out.println("Error while reading other file:" + e.getMessage());
+            logger.debug("Error while reading other file:" + e.getMessage());
             e.printStackTrace();
             return false;
         }
@@ -637,7 +663,7 @@ public class Model {
 
                     StringTokenizer tknr2 = new StringTokenizer(token, ":");
                     if (tknr2.countTokens() != 2){
-                        System.out.println("Invalid word-topic assignment line\n");
+                        logger.debug("Invalid word-topic assignment line\n");
                         return false;
                     }
 
@@ -660,10 +686,20 @@ public class Model {
             reader.close();
         }
         catch (Exception e){
-            System.out.println("Error while loading model: " + e.getMessage());
+            logger.debug("Error while loading model: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
         return true;
     }
+
+    /**
+     * Save theta (topic distribution) for this model
+     */
+    public ThetaMatrix returnModelTheta(){
+        ThetaMatrix theta=new ThetaMatrix(M,K);
+        theta.data =this.theta;
+        return theta;
+    }
+
 }

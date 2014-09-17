@@ -28,20 +28,22 @@
 
 package jgibblda;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import org.apache.log4j.Logger;
+
+import java.util.List;
 
 public class Estimator
 {
+    private  static Logger logger = Logger.getLogger(Estimator.class);
     // output model
     protected Model trnModel;
     LDACmdOption option;
 
-    public Estimator(LDACmdOption option) throws FileNotFoundException, IOException
+    public Estimator(LDACmdOption option,List<String> docs)
     {
         this.option = option;
 
-        trnModel = new Model(option);
+        trnModel = new Model(option,docs);
 
         if (option.est){
             trnModel.init(true);
@@ -53,10 +55,10 @@ public class Estimator
 
     public void estimate()
     {
-        System.out.println("Sampling " + trnModel.niters + " iterations!");
-        System.out.print("Iteration");
+        logger.info("Sampling " + trnModel.niters + " iterations!");
+        logger.debug("Iteration");
         for (int startIter = ++trnModel.liter; trnModel.liter <= startIter - 1 + trnModel.niters; trnModel.liter++){
-            System.out.format("%6d", trnModel.liter);
+            logger.debug("  "+trnModel.liter);
 
             // for all z_i
             for (int m = 0; m < trnModel.M; m++){				
@@ -77,7 +79,7 @@ public class Estimator
         }// end iterations
         trnModel.liter--;
 
-        System.out.println("\nSaving the final model!");
+        logger.info("\nSaving the final model!");
         trnModel.saveModel();
     }
 

@@ -27,19 +27,16 @@
  */
 package jgibblda;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
+import org.apache.log4j.Logger;
+
+import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
-
 public class Dictionary {
+    private  static Logger logger = Logger.getLogger(Dictionary.class);
     public TObjectIntHashMap<String> word2id;
     public TIntObjectHashMap<String> id2word;
 
@@ -120,7 +117,7 @@ public class Dictionary {
             return true;
         }
         catch (Exception e) {
-            System.out.println("Error while reading dictionary:" + e.getMessage());
+            logger.error("Error while reading dictionary:" + e.getMessage());
             e.printStackTrace();
             return false;
         }		
@@ -142,7 +139,7 @@ public class Dictionary {
             return true;
         }
         catch (Exception e) {
-            System.out.println("Error while writing word map " + e.getMessage());
+            logger.error("Error while writing word map " + e.getMessage());
             e.printStackTrace();
             return false;
         }

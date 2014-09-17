@@ -35,7 +35,7 @@ public class LDACmdOption {
         public double beta = -1;
 
     @Option(name="-ntopics", usage="Specify the number of topics")
-        public int K = 100;
+        public int K = 50;
 
     @Option(name="-niters", usage="Specify the number of iterations")
         public int niters = 1000;

@@ -2,13 +2,7 @@ package jgibblda.Util;
 
 import java.io.*;
 
-/**
- * Created with IntelliJ IDEA.
- * User: zjjin
- * Date: 14-7-30
- * Time: 下午3:01
- * To change this template use File | Settings | File Templates.
- */
+
 public class FileIO {
     public static String readToString(String filePath){
         return readToString(filePath, "utf8");
